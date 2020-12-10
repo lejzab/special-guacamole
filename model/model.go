@@ -1,4 +1,4 @@
-package main
+package model
 
 import (
 	"database/sql"
@@ -21,9 +21,14 @@ type Client struct {
 	Name string
 }
 
-func MakeConnectionString(config Configuration) string {
+func MakeConnectionString(db string,
+	user string,
+	password string,
+	host string,
+	port int,
+) string {
 	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		config.Host, config.Port, config.Username, config.Password, config.Database)
+		host, port, user, password, db)
 }
 
 var db *sql.DB
@@ -31,7 +36,8 @@ var err error
 var wg sync.WaitGroup
 
 func Clients() []Client {
-	sqlStatement := `SELECT id, name FROM client WHERE status='Włączony'`
+	//sqlStatement := `SELECT id, name FROM client WHERE status='Włączony'`
+	sqlStatement := `SELECT id, name FROM client`
 	clients := make([]Client, 0, 8)
 
 	var c Client
