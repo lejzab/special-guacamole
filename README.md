@@ -1,2 +1,4 @@
 # special-guacamole
-go work spacer
+go work **spacer**
+
+`ćwiczenia z połączenia z pg`
