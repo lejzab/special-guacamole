@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"os"
 )
 
@@ -17,6 +18,7 @@ type Configuration struct {
 }
 
 func main() {
+	log.Info("START")
 	var configFile string
 	flag.StringVar(&configFile, "config", "config.json", "name of config file")
 	flag.StringVar(&configFile, "c", "config.json", "name of config file")

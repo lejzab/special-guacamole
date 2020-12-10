@@ -30,33 +30,6 @@ var db *sql.DB
 var err error
 var wg sync.WaitGroup
 
-//func main() {
-//	config, err := readConfiguration("config.json")
-//	//fmt.Println(config, err)
-//	psqlInfo := makeConnectionString(config)
-//	db, err = sql.Open("postgres", psqlInfo)
-//	if err != nil {
-//		panic(err)
-//	}
-//	defer db.Close()
-//
-//	err = db.Ping()
-//	if err != nil {
-//		panic(err)
-//	}
-//	fmt.Println("Successfully connected!")
-//
-//	clients := clients()
-//	var hosts []Host
-//	for _, c := range clients {
-//		hosts = hosts_by_client(c)
-//		fmt.Printf("Client: %s, hosts count: %d\n", c.Name, len(hosts))
-//	}
-//	fmt.Println(len(clients), cap(clients))
-//	fmt.Println("KONIEC")
-//
-//}
-
 func Clients() []Client {
 	sqlStatement := `SELECT id, name FROM client WHERE status='Włączony'`
 	clients := make([]Client, 0, 8)
