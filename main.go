@@ -18,7 +18,7 @@ func main() {
 		log.Warn(err)
 		return
 	}
-	log.Info(config)
+	log.Debug(config)
 	configurator, err := model.NewConfigurator(config.Db.Username, config.Db.Password, config.Db.Host, config.Db.Database, config.Db.Port)
 	if err != nil {
 		log.Warn(err)
@@ -26,5 +26,11 @@ func main() {
 	}
 	defer configurator.Close()
 
+	for idx, c := range configurator.Clients() {
+		log.Info(idx, c)
+		hosts := configurator.HostsByClient(c.Id)
+		log.Infof("Number of hosts: %d.", len(hosts))
+	}
+	log.Debug(configurator)
 	log.Info("STOP")
 }

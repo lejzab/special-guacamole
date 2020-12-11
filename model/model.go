@@ -4,10 +4,11 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
+	log "github.com/sirupsen/logrus"
 )
 
 type Host struct {
-	ID             int
+	Id             int
 	Name           string
 	Autoname       string
 	IP             string
@@ -16,31 +17,32 @@ type Host struct {
 }
 
 type Client struct {
-	ID   int
-	Name string
+	Id        int
+	Name      string
+	GrafanaId string
+}
+
+func (cl Client) String() string {
+	return fmt.Sprintf("Client: %v. <%d> ", cl.Name, cl.Id)
 }
 
 type configurator struct {
-	Host         string
-	Port         int
-	Username     string
-	Password     string
-	DatabaseName string
-	Db           *sql.DB
+	Db *sql.DB
 }
 
 func (c configurator) Close() error {
 	return c.Db.Close()
 }
 
+func (c configurator) String() string {
+	return "configuratro"
+}
+
 func NewConfigurator(username, password, host, dbname string, port int) (*configurator, error) {
 	c := new(configurator)
-	c.Username = username
-	c.Password = password
-	c.Host = host
-	c.DatabaseName = dbname
-	c.Port = port
-	db, err := sql.Open("postgres", makeConnectionString(c.DatabaseName, c.Username, c.Password, c.Host, c.Port))
+	db, err := sql.Open("postgres",
+		fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable application_name=go_pollers",
+			host, port, username, password, dbname))
 	if err != nil {
 		return nil, err
 	}
@@ -53,57 +55,46 @@ func NewConfigurator(username, password, host, dbname string, port int) (*config
 	return c, nil
 }
 
-func makeConnectionString(db string,
-	user string,
-	password string,
-	host string,
-	port int,
-) string {
-	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		host, port, user, password, db)
+func (c configurator) Clients() []Client {
+	sqlStatement := "SELECT id, name, grafana_id FROM client order by name"
+	var clients []Client
+
+	var cl Client
+	rows, err := c.Db.Query(sqlStatement)
+	if err != nil {
+		log.Warn(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		err = rows.Scan(&cl.Id, &cl.Name, &cl.GrafanaId)
+		clients = append(clients, cl)
+	}
+	err = rows.Err()
+	if err != nil {
+		log.Warn(err)
+	}
+	return clients
 }
 
-//func Clients() []Client {
-//	//sqlStatement := `SELECT id, name FROM client WHERE status='Włączony'`
-//	sqlStatement := `SELECT id, name FROM client`
-//	clients := make([]Client, 0, 8)
-//
-//	var c Client
-//	rows, err := db.Query(sqlStatement)
-//	if err != nil {
-//		panic(err)
-//	}
-//	defer rows.Close()
-//
-//	for rows.Next() {
-//		err = rows.Scan(&c.ID, &c.Name)
-//		clients = append(clients, c)
-//	}
-//	err = rows.Err()
-//	if err != nil {
-//		panic(err)
-//	}
-//	return clients
-//}
-//
-//func HostsByClient(client Client) []Host {
-//	sqlStatement := `SELECT id, name, autoname, ip, snmp_community, status FROM host WHERE client_id=$1;`
-//	var h Host
-//	hosts := make([]Host, 0, 64)
-//	rows, err := db.Query(sqlStatement, client.ID)
-//	if err != nil {
-//		panic(err)
-//	}
-//	defer rows.Close()
-//
-//	for rows.Next() {
-//		err = rows.Scan(&h.ID, &h.Name, &h.Autoname, &h.IP, &h.SNMP_community, &h.Status)
-//		hosts = append(hosts, h)
-//	}
-//
-//	err = rows.Err()
-//	if err != nil {
-//		panic(err)
-//	}
-//	return hosts
-//}
+func (c configurator) HostsByClient(clientId int) []Host {
+	sqlStatement := `SELECT id, name, autoname, ip, snmp_community, status FROM host WHERE client_id=$1 order by autoname`
+	var h Host
+	var hosts []Host
+	rows, err := c.Db.Query(sqlStatement, clientId)
+	if err != nil {
+		log.Warn(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		err = rows.Scan(&h.Id, &h.Name, &h.Autoname, &h.IP, &h.SNMP_community, &h.Status)
+		hosts = append(hosts, h)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		log.Warn(err)
+	}
+	return hosts
+}
