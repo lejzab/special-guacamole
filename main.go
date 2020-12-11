@@ -26,10 +26,14 @@ func main() {
 	}
 	defer configurator.Close()
 
-	for idx, c := range configurator.Clients() {
-		log.Info(idx, c)
-		hosts := configurator.HostsByClient(c.Id)
-		log.Infof("Number of hosts: %d.", len(hosts))
+	if clients, err := configurator.Clients(); clients != nil {
+		for idx, c := range clients {
+			log.Info(idx, c)
+			//hosts, _ := configurator.HostsByClient(c.Id)
+			//log.Infof("Number of hosts: %d.", len(hosts))
+		}
+	} else {
+		log.Warn(err)
 	}
 	log.Debug(configurator)
 	log.Info("STOP")
