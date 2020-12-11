@@ -42,6 +42,11 @@ type PingProfile struct {
 	Timeout        int
 }
 
+func (pp PingProfile) String() string {
+	return fmt.Sprintf("ID: %d, packet count: %d, packet interval: %d, packet size: %d, success: %d, timeout: %d.",
+		pp.Id, pp.PacketCount, pp.PacketInterval, pp.PacketSize, pp.Success, pp.Timeout)
+}
+
 func (cl Client) String() string {
 	return fmt.Sprintf("Client: %v. <%d> ", cl.Name, cl.Id)
 }
@@ -75,7 +80,56 @@ func NewConfigurator(username, password, host, dbname string, port int) (*config
 	return c, nil
 }
 func (c configurator) PingProfiles() ([]PingProfile, error) {
-	var profiles []PingProfile
+	sqlStatement := `select measure_type_id, name, default_value from measure_available_param
+where measure_type_id in (select id from measure_type where family = 'PING')
+and type = 'MEASUREMENT'
+order by measure_type_id, name`
+
+	var (
+		profiles []PingProfile
+		mt, dv   int
+		n        string
+		t        map[int]PingProfile
+	)
+
+	t = make(map[int]PingProfile)
+	rows, err := c.Db.Query(sqlStatement)
+	if err != nil {
+		return nil, modelError("sql statemant error", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		err = rows.Scan(&mt, &n, &dv)
+		p, ok := t[mt]
+		if !ok {
+			p = PingProfile{Id: mt}
+		}
+		switch n {
+		case "packet_count":
+			p.PacketCount = dv
+		case "packet_interval":
+			p.PacketInterval = dv
+		case "packet_size":
+			p.PacketSize = dv
+		case "success":
+			p.Success = dv
+		case "timeout":
+			p.Timeout = dv
+		}
+		t[mt] = p
+		if err != nil {
+			return nil, modelError("error fetching ping parameters", err)
+		}
+	}
+	for key := range t {
+		profiles = append(profiles, t[key])
+	}
+	log.Info(profiles)
+	err = rows.Err()
+	if err != nil {
+		return nil, modelError("error fetching clients", err)
+	}
 
 	return profiles, nil
 }

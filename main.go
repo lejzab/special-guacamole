@@ -26,13 +26,17 @@ func main() {
 	}
 	defer configurator.Close()
 
-	if clients, err := configurator.Clients(); clients != nil {
-		for idx, c := range clients {
-			log.Info(idx, c)
-			//hosts, _ := configurator.HostsByClient(c.Id)
-			//log.Infof("Number of hosts: %d.", len(hosts))
-		}
-	} else {
+	//if clients, err := configurator.Clients(); clients != nil {
+	//	for idx, c := range clients {
+	//		log.Info(idx, c)
+	//		//hosts, _ := configurator.HostsByClient(c.Id)
+	//		//log.Infof("Number of hosts: %d.", len(hosts))
+	//	}
+	//} else {
+	//	log.Warn(err)
+	//}
+	_, err = configurator.PingProfiles()
+	if err != nil {
 		log.Warn(err)
 	}
 	log.Debug(configurator)
